@@ -1,0 +1,37 @@
+# build & tmp
+build/
+out/
+obj/
+*.o
+*.a
+*.so
+*.d
+*.dSYM/
+*.tmp
+*.log
+*.swp
+*.swo
+
+# kernel / images
+*.bin
+*.elf
+*.img
+*.iso
+*.map
+
+# Python / notebooks
+__pycache__/
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 不要把本地工具链、模拟器误加进来
+toolchains/
+qemu/
+
