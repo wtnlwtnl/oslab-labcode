@@ -158,19 +158,20 @@ TARGETS: $(TARGETS)
 
 .PHONY: qemu 
 qemu: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
-#	$(V)$(QEMU) -kernel $(UCOREIMG) -nographic
-	$(V)$(QEMU) \
+	$(QEMU) \
 		-machine virt \
+		-smp 1 \
 		-nographic \
 		-bios default \
 		-device loader,file=$(UCOREIMG),addr=0x80200000
 
 debug: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
-	$(V)$(QEMU) \
+	$(QEMU) \
 		-machine virt \
+		-smp 1 \
 		-nographic \
 		-bios default \
-		-device loader,file=$(UCOREIMG),addr=0x80200000\
+		-device loader,file=$(UCOREIMG),addr=0x80200000 \
 		-s -S
 
 gdb:
