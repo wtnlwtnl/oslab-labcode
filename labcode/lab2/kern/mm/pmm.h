@@ -33,6 +33,11 @@ struct pmm_manager {
 
 extern const struct pmm_manager *pmm_manager;
 
+// 确保有这些声明（如果没有就添加）
+extern const struct pmm_manager default_pmm_manager;
+extern const struct pmm_manager best_fit_pmm_manager;
+extern const struct pmm_manager buddy_system_pmm_manager;  // 添加这行
+
 void pmm_init(void);
 
 struct Page *alloc_pages(size_t n);
