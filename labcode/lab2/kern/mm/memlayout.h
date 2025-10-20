@@ -38,6 +38,41 @@ struct Page {
     list_entry_t page_link;         // free list link
 };
 
+typedef struct free_object {
+	struct free_object *next;
+} free_object_t;
+
+struct slab {
+    free_object_t *free_obj;
+	struct Page *page;
+    list_entry_t slab_list;
+	size_t inuse;
+	size_t nr_free_objs;
+};
+
+struct kmem_cache_node {
+    list_entry_t slab_link;
+    size_t nr_partial;
+} ;
+
+struct kmem_cache_cpu {
+    list_entry_t partial_link;
+    struct slab *page;
+    size_t freeobjs;
+} ;
+
+struct kmem_cache {
+    size_t size;
+    size_t align;
+    size_t min_partial;
+    size_t cpu_partial;
+    size_t inuse;
+    char *name;
+	list_entry_t cache_link;
+    struct kmem_cache_node *kmem_node;
+    struct kmem_cache_cpu *kmem_cpu;
+} ;
+
 /* Flags describing the status of a page frame */
 #define PG_reserved                 0       // if this bit=1: the Page is reserved for kernel, cannot be used in alloc/free_pages; otherwise, this bit=0 
 #define PG_property                 1       // if this bit=1: the Page is the head page of a free memory block(contains some continuous_addrress pages), and can be used in alloc_pages; if this bit=0: if the Page is the the head page of a free memory block, then this Page and the memory block is alloced. Or this Page isn't the head page.
@@ -52,6 +87,13 @@ struct Page {
 // convert list entry to page
 #define le2page(le, member)                 \
     to_struct((le), struct Page, member)
+
+#define le2kmem_cache(le, member)                 \
+    to_struct((le), struct kmem_cache, member)
+
+#define le2slab(le, member)                 \
+    to_struct((le), struct slab, member)
+
 
 /* free_area_t - maintains a doubly linked list to record free (unused) pages */
 typedef struct {

@@ -5,5 +5,5 @@
 
 extern const struct pmm_manager buddy_system_pmm_manager;
 
-#endif /* ! __KERN_MM_DEFAULT_PMM_H__ */
+#endif /* ! __KERN_MM_SLUB_PMM_H__ */
 

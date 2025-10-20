@@ -29,14 +29,14 @@ struct pmm_manager {
                                                       // structures(memlayout.h)
     size_t (*nr_free_pages)(void);  // return the number of free pages
     void (*check)(void);            // check the correctness of XXX_pmm_manager
+    // only used in slub pmm manager
+    // struct kmem_cache *(*kmem_cache_create)(char* name, size_t size);
+    // void (*kmem_cache_destroy)(struct kmem_cache *kc);
+    // void *(*kmem_cache_alloc)(struct kmem_cache *kc);
+    // void (*kmem_cache_free)(struct kmem_cache *kc, void *o);
 };
 
 extern const struct pmm_manager *pmm_manager;
-
-// 确保有这些声明（如果没有就添加）
-extern const struct pmm_manager default_pmm_manager;
-extern const struct pmm_manager best_fit_pmm_manager;
-extern const struct pmm_manager buddy_system_pmm_manager;  // 添加这行
 
 void pmm_init(void);
 
@@ -69,7 +69,7 @@ size_t nr_free_pages(void); // number of free pages
  * KADDR - takes a physical address and returns the corresponding kernel virtual
  * address. It panics if you pass an invalid physical address.
  * */
-/*
+
 #define KADDR(pa)                                                \
     ({                                                           \
         uintptr_t __m_pa = (pa);                                 \
@@ -79,13 +79,14 @@ size_t nr_free_pages(void); // number of free pages
         }                                                        \
         (void *)(__m_pa + va_pa_offset);                         \
     })
-*/
+
 extern struct Page *pages;
 extern size_t npage;
 extern const size_t nbase;
 extern uint64_t va_pa_offset;
 
 static inline ppn_t page2ppn(struct Page *page) { return page - pages + nbase; }
+// static inline ppn_t page2kva(struct Page *page) { return page - pages; }
 
 static inline uintptr_t page2pa(struct Page *page) {
     return page2ppn(page) << PGSHIFT;
