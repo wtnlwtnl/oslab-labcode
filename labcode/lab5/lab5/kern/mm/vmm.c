@@ -218,7 +218,8 @@ int dup_mmap(struct mm_struct *to, struct mm_struct *from)
 
         insert_vma_struct(to, nvma);
 
-        bool share = 0;
+        // Enable COW: share = 1 to use copy-on-write
+        bool share = 1;
         if (copy_range(to->pgdir, from->pgdir, vma->vm_start, vma->vm_end, share) != 0)
         {
             return -E_NO_MEM;
@@ -381,4 +382,111 @@ bool user_mem_check(struct mm_struct *mm, uintptr_t addr, size_t len, bool write
         return 1;
     }
     return KERN_ACCESS(addr, addr + len);
+}
+
+/*
+ * do_pgfault - handle page fault exception for COW
+ * @mm: the mm_struct of current process
+ * @error_code: the error code (1 for write, 0 for read)
+ * @addr: the virtual address that caused the page fault
+ * 
+ * RETURNS: 0 on success, -E_INVAL or -E_NO_MEM on failure
+ * 
+ * This function handles:
+ * 1. Lazy allocation: allocate page on first access
+ * 2. Copy-on-Write: copy shared page when write occurs
+ */
+int do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr)
+{
+    if (mm == NULL)
+    {
+        return -E_INVAL;
+    }
+
+    addr = ROUNDDOWN(addr, PGSIZE);
+
+    // Find the vma containing this address
+    struct vma_struct *vma = find_vma(mm, addr);
+    if (vma == NULL || addr < vma->vm_start)
+    {
+        return -E_INVAL;
+    }
+
+    // Get the page table entry
+    pte_t *ptep = get_pte(mm->pgdir, addr, 0);
+
+    // Case 1: Page not present - need to allocate a new page (lazy allocation)
+    if (ptep == NULL || !(*ptep & PTE_V))
+    {
+        // For read fault on non-readable or write fault on non-writable, fail
+        if (error_code && !(vma->vm_flags & VM_WRITE))
+        {
+            return -E_INVAL;
+        }
+        if (!error_code && !(vma->vm_flags & VM_READ))
+        {
+            return -E_INVAL;
+        }
+
+        // Allocate a new page with appropriate permissions
+        uint32_t perm = PTE_U | PTE_V;
+        if (vma->vm_flags & VM_READ) perm |= PTE_R;
+        if (vma->vm_flags & VM_WRITE) perm |= PTE_W | PTE_R;
+        if (vma->vm_flags & VM_EXEC) perm |= PTE_X;
+
+        if (pgdir_alloc_page(mm->pgdir, addr, perm) == NULL)
+        {
+            return -E_NO_MEM;
+        }
+        return 0;
+    }
+
+    // Case 2: Page is present with COW flag - handle Copy-on-Write
+    if (*ptep & PTE_COW)
+    {
+        // Must be a write fault on a writable vma
+        if (!(vma->vm_flags & VM_WRITE))
+        {
+            return -E_INVAL;
+        }
+
+        struct Page *old_page = pte2page(*ptep);
+
+        // Build new permission: writable, no COW flag
+        uint32_t perm = PTE_U | PTE_V | PTE_R | PTE_W;
+        if (vma->vm_flags & VM_EXEC) perm |= PTE_X;
+
+        if (page_ref(old_page) > 1)
+        {
+            // Multiple references: need to copy the page
+            struct Page *new_page = alloc_page();
+            if (new_page == NULL)
+            {
+                return -E_NO_MEM;
+            }
+
+            // Copy content from old page to new page
+            memcpy(page2kva(new_page), page2kva(old_page), PGSIZE);
+
+            // Map the new page with write permission
+            // page_insert will set new_page->ref = 1 and invalidate TLB
+            if (page_insert(mm->pgdir, new_page, addr, perm) != 0)
+            {
+                free_page(new_page);
+                return -E_NO_MEM;
+            }
+        }
+        else
+        {
+            // Only one reference: just restore write permission
+            // Update PTE directly and invalidate TLB
+            *ptep = pte_create(page2ppn(old_page), perm);
+            tlb_invalidate(mm->pgdir, addr);
+        }
+        return 0;
+    }
+
+    // Case 3: Page present, no COW flag, but fault occurred
+    // This shouldn't happen in normal operation
+    return -E_INVAL;
 }

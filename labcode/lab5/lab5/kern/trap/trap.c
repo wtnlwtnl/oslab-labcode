@@ -15,6 +15,7 @@
 #include <sched.h>
 #include <sync.h>
 #include <sbi.h>
+#include <proc.h>
 
 #define TICK_NUM 100
 
@@ -231,7 +232,15 @@ void exception_handler(struct trapframe *tf)
         }
         break;
     case CAUSE_LOAD_PAGE_FAULT:
-        cprintf("Load page fault\n");
+        // Handle load page fault (for lazy allocation or COW read)
+        if (current != NULL && current->mm != NULL)
+        {
+            if (do_pgfault(current->mm, 0, tf->tval) == 0)
+            {
+                break;  // Successfully handled
+            }
+        }
+        cprintf("Load page fault at addr 0x%08x\n", tf->tval);
         print_trapframe(tf);
         if (current != NULL)
         {
@@ -239,7 +248,15 @@ void exception_handler(struct trapframe *tf)
         }
         break;
     case CAUSE_STORE_PAGE_FAULT:
-        cprintf("Store/AMO page fault\n");
+        // Handle store page fault (for COW)
+        if (current != NULL && current->mm != NULL)
+        {
+            if (do_pgfault(current->mm, 1, tf->tval) == 0)
+            {
+                break;  // Successfully handled COW
+            }
+        }
+        cprintf("Store/AMO page fault at addr 0x%08x\n", tf->tval);
         print_trapframe(tf);
         if (current != NULL)
         {
