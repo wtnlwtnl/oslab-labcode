@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <unistd.h>
+#include <sbi.h>
 
 /* ------------- process/thread mechanism design&implementation -------------
 (an simplified Linux process/thread mechanism )
@@ -970,6 +971,7 @@ init_main(void *arg)
     assert(list_prev(&proc_list) == &(initproc->list_link));
 
     cprintf("init check memory pass.\n");
+    sbi_shutdown();
     return 0;
 }
 

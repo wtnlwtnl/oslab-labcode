@@ -31,7 +31,7 @@ DTB init completed
 
 Special kernel symbols:
   entry  0xc020004a (virtual)
-  etext  0xc0205710 (virtual)
+  etext  0xc020573c (virtual)
   edata  0xc02a6390 (virtual)
   end    0xc02aa83c (virtual)
 Kernel executable memory footprint: 682KB
@@ -84,6 +84,3 @@ I am child 7
 forktest pass.
 all user-mode processes have quit.
 init check memory pass.
-kernel panic at kern/process/proc.c:520:
-    initproc exit.
-
