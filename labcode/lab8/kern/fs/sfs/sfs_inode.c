@@ -1,3 +1,4 @@
+#include "stdio.h"
 #include <defs.h>
 #include <string.h>
 #include <stdlib.h>
@@ -600,7 +601,33 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
 	 *       NOTICE: useful function: sfs_bmap_load_nolock, sfs_buf_op	
 	*/
 
-    
+    uint32_t index = 0;
+    blkoff = offset % SFS_BLKSIZE;
+    if(blkoff) {
+        size = (nblks) ? (SFS_BLKSIZE - blkoff) : (endpos - offset);
+        if((ret = sfs_bmap_load_nolock(sfs, sin, blkno, &index)) != 0)
+            goto out;
+        if((ret = sfs_buf_op(sfs, buf + alen, size, index, blkoff)) != 0)
+            goto out;
+        alen += size;
+        if(!nblks) goto out;
+        ++blkno, --nblks;
+    }
+    if(nblks) {
+        if((ret = sfs_bmap_load_nolock(sfs, sin, blkno, &index)) != 0)
+            goto out;
+        if((ret = sfs_block_op(sfs, buf + alen, index, nblks)) != 0)
+            goto out;
+        alen += nblks * SFS_BLKSIZE;
+    }
+    blkoff = endpos % SFS_BLKSIZE;
+    if(blkoff) {
+        if((ret = sfs_bmap_load_nolock(sfs, sin, blkno + nblks, &index)) != 0)
+            goto out;
+        if((ret = sfs_buf_op(sfs, buf + alen, blkoff, index, 0)) != 0)
+            goto out;
+        alen += blkoff;
+    }
 
 out:
     *alenp = alen;

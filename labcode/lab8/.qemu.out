@@ -23,7 +23,7 @@ PMP1: 0x0000000000000000-0xffffffffffffffff (A,R,W,X)
 
 Special kernel symbols:
   entry  0xc020004a (virtual)
-  etext  0xc020b2aa (virtual)
+  etext  0xc020b522 (virtual)
   edata  0xc0291060 (virtual)
   end    0xc0296910 (virtual)
 Kernel executable memory footprint: 603KB
@@ -55,10 +55,6 @@ sfs: mount: 'simple file system' (106/11/117)
 vfs: mount disk0.
 ++ setup timer interrupts
 kernel_execve: pid = 2, name = "sh".
-do_execve failed: unspecified error.
-sfs: cleanup: 'simple file system' (106/11/117)
-all user-mode processes have quit.
-init check memory pass.
-kernel panic at kern/process/proc.c:616:
-    initproc exit.
-
+loading
+user sh is running!!!
+$ 

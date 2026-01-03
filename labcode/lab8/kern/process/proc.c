@@ -567,7 +567,7 @@ int do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf)
 
     if (copy_files(clone_flags, proc) != 0)
     {
-        goto bad_fork_cleanup_fs;
+        goto bad_fork_cleanup_kstack;
     }
 
     if (copy_mm(clone_flags, proc) != 0)
@@ -723,7 +723,6 @@ load_icode(int fd, int argc, char **kargv)
     {
         panic("load_icode: current->mm must be empty.\n");
     }
-
     int ret = -E_NO_MEM;
     struct mm_struct *mm = NULL;
 
